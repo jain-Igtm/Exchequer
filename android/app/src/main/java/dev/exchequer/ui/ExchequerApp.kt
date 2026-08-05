@@ -23,7 +23,6 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.layout.weight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -79,10 +78,7 @@ private sealed interface ScreenState {
     data class Failed(val message: String) : ScreenState
 }
 
-private enum class MathTab {
-    Mathematics,
-    Lean,
-}
+private enum class MathTab { Math, Lean }
 
 @Composable
 fun ExchequerApp() {
@@ -102,14 +98,8 @@ fun ExchequerApp() {
     GlossBackground {
         when (val current = state) {
             ScreenState.Loading -> LoadingScreen()
-            is ScreenState.Failed -> FailureScreen(
-                message = current.message,
-                onRefresh = { refreshKey++ },
-            )
-            is ScreenState.Ready -> Dashboard(
-                snapshot = current.snapshot,
-                onRefresh = { refreshKey++ },
-            )
+            is ScreenState.Failed -> FailureScreen(current.message) { refreshKey++ }
+            is ScreenState.Ready -> Dashboard(current.snapshot) { refreshKey++ }
         }
     }
 }
@@ -121,38 +111,28 @@ private fun GlossBackground(content: @Composable () -> Unit) {
             .fillMaxSize()
             .background(
                 Brush.verticalGradient(
-                    listOf(
-                        Color(0xFF08080D),
-                        Color(0xFF0A0910),
-                        Color(0xFF050507),
-                    )
+                    listOf(Color(0xFF09090E), Color(0xFF07070B), Color(0xFF030305))
                 )
             )
     ) {
         Canvas(Modifier.fillMaxSize()) {
             drawCircle(
                 brush = Brush.radialGradient(
-                    colors = listOf(
-                        Color(0xFF8E63FF).copy(alpha = 0.22f),
-                        Color.Transparent,
-                    ),
-                    center = Offset(size.width * 0.18f, size.height * 0.08f),
-                    radius = size.width * 0.72f,
+                    colors = listOf(Color(0xFF8E63FF).copy(alpha = 0.22f), Color.Transparent),
+                    center = Offset(size.width * 0.15f, size.height * 0.08f),
+                    radius = size.width * 0.75f,
                 ),
-                radius = size.width * 0.72f,
-                center = Offset(size.width * 0.18f, size.height * 0.08f),
+                radius = size.width * 0.75f,
+                center = Offset(size.width * 0.15f, size.height * 0.08f),
             )
             drawCircle(
                 brush = Brush.radialGradient(
-                    colors = listOf(
-                        Color(0xFF1BC7E8).copy(alpha = 0.12f),
-                        Color.Transparent,
-                    ),
-                    center = Offset(size.width * 0.9f, size.height * 0.52f),
+                    colors = listOf(Color(0xFF21C7E8).copy(alpha = 0.11f), Color.Transparent),
+                    center = Offset(size.width * 0.95f, size.height * 0.55f),
                     radius = size.width * 0.65f,
                 ),
                 radius = size.width * 0.65f,
-                center = Offset(size.width * 0.9f, size.height * 0.52f),
+                center = Offset(size.width * 0.95f, size.height * 0.55f),
             )
         }
         content()
@@ -177,20 +157,20 @@ private fun FailureScreen(message: String, onRefresh: () -> Unit) {
         modifier = Modifier
             .fillMaxSize()
             .padding(
-                top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 20.dp,
-                start = 20.dp,
-                end = 20.dp,
+                top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 16.dp,
+                start = 18.dp,
+                end = 18.dp,
             ),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         Header(onRefresh)
         GlossCard {
             Text(
                 text = "SYNC FAILED",
                 color = MaterialTheme.colorScheme.error,
-                fontSize = 12.sp,
+                fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
-                letterSpacing = 1.2.sp,
+                letterSpacing = 1.1.sp,
             )
             Spacer(Modifier.height(10.dp))
             SelectionContainer {
@@ -199,7 +179,7 @@ private fun FailureScreen(message: String, onRefresh: () -> Unit) {
                     color = MaterialTheme.colorScheme.onSurface,
                     fontFamily = FontFamily.Monospace,
                     fontSize = 13.sp,
-                    lineHeight = 20.sp,
+                    lineHeight = 19.sp,
                 )
             }
         }
@@ -208,54 +188,46 @@ private fun FailureScreen(message: String, onRefresh: () -> Unit) {
 
 @Composable
 private fun Dashboard(snapshot: RepositorySnapshot, onRefresh: () -> Unit) {
-    var selectedProblemId by remember(snapshot.feed.problems) {
+    var selectedId by remember(snapshot.feed.problems) {
         mutableStateOf(snapshot.feed.problems.firstOrNull()?.id)
     }
-    val selectedProblem = snapshot.feed.problems.firstOrNull { it.id == selectedProblemId }
+    val selected = snapshot.feed.problems.firstOrNull { it.id == selectedId }
         ?: snapshot.feed.problems.firstOrNull()
-
-    val topPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
-    val bottomPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(
             start = 18.dp,
             end = 18.dp,
-            top = topPadding + 12.dp,
-            bottom = bottomPadding + 28.dp,
+            top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 12.dp,
+            bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 28.dp,
         ),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         item { Header(onRefresh) }
-        snapshot.latestBuild?.let { build ->
-            item {
-                BuildCard(
-                    latestBuild = build,
-                    verifiedBuild = snapshot.verifiedBuild,
-                )
-            }
+        snapshot.latestBuild?.let { latest ->
+            item { BuildCard(latest, snapshot.verifiedBuild) }
         }
 
         if (snapshot.feed.problems.size > 1) {
             item {
-                ProblemSelector(
-                    problems = snapshot.feed.problems,
-                    selectedId = selectedProblem?.id,
-                    onSelected = { selectedProblemId = it },
-                )
+                ProblemSelector(snapshot.feed.problems, selected?.id) { selectedId = it }
             }
         }
 
-        selectedProblem?.let { problem ->
-            item { ProblemTitle(problem.title) }
+        selected?.let { problem ->
+            item {
+                Text(
+                    text = problem.title,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    fontSize = 21.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    letterSpacing = (-0.25).sp,
+                    modifier = Modifier.padding(start = 2.dp, top = 2.dp),
+                )
+            }
             if (problem.verified.isNotEmpty()) {
-                item {
-                    VerifiedSection(
-                        items = problem.verified,
-                        verifiedSha = snapshot.verifiedBuild?.headSha,
-                    )
-                }
+                item { VerifiedSection(problem.verified, snapshot.verifiedBuild?.headSha) }
             }
             if (problem.obstructions.isNotEmpty()) {
                 item { ObstructionsSection(problem.obstructions) }
@@ -265,9 +237,7 @@ private fun Dashboard(snapshot: RepositorySnapshot, onRefresh: () -> Unit) {
 
         if (snapshot.activity.isNotEmpty()) {
             item { SectionLabel("Latest activity") }
-            items(snapshot.activity, key = { it.sha }) { activity ->
-                ActivityRow(activity)
-            }
+            items(snapshot.activity, key = { it.sha }) { ActivityRow(it) }
         }
     }
 }
@@ -298,9 +268,9 @@ private fun Header(onRefresh: () -> Unit) {
 }
 
 @Composable
-private fun BuildCard(latestBuild: BuildSnapshot, verifiedBuild: BuildSnapshot?) {
-    val result = latestBuild.conclusion ?: latestBuild.status
-    val statusColor = when (result) {
+private fun BuildCard(latest: BuildSnapshot, verified: BuildSnapshot?) {
+    val result = latest.conclusion ?: latest.status
+    val color = when (result) {
         "success" -> Color(0xFF7BF0B5)
         "failure", "cancelled", "timed_out" -> Color(0xFFFF8E96)
         else -> Color(0xFFFFD27A)
@@ -312,7 +282,7 @@ private fun BuildCard(latestBuild: BuildSnapshot, verifiedBuild: BuildSnapshot?)
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
                 SectionLabel("Lean build")
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -322,11 +292,11 @@ private fun BuildCard(latestBuild: BuildSnapshot, verifiedBuild: BuildSnapshot?)
                         Modifier
                             .size(8.dp)
                             .clip(CircleShape)
-                            .background(statusColor)
+                            .background(color)
                     )
                     Text(
                         text = result.uppercase(),
-                        color = statusColor,
+                        color = color,
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 0.9.sp,
@@ -335,34 +305,30 @@ private fun BuildCard(latestBuild: BuildSnapshot, verifiedBuild: BuildSnapshot?)
             }
             Column(horizontalAlignment = Alignment.End) {
                 Text(
-                    text = latestBuild.headSha.take(8),
+                    text = latest.headSha.take(8),
                     color = MaterialTheme.colorScheme.onSurface,
                     fontFamily = FontFamily.Monospace,
                     fontSize = 13.sp,
                 )
                 Text(
-                    text = formatTimestamp(latestBuild.updatedAt),
+                    text = formatTimestamp(latest.updatedAt),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 12.sp,
                 )
             }
         }
 
-        if (verifiedBuild != null && verifiedBuild.headSha != latestBuild.headSha) {
-            Spacer(Modifier.height(16.dp))
+        if (verified != null && verified.headSha != latest.headSha) {
+            Spacer(Modifier.height(15.dp))
             Hairline()
-            Spacer(Modifier.height(14.dp))
+            Spacer(Modifier.height(13.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
+                Text("Verified commit", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                 Text(
-                    text = "Verified commit",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontSize = 12.sp,
-                )
-                Text(
-                    text = verifiedBuild.headSha.take(8),
+                    verified.headSha.take(8),
                     color = MaterialTheme.colorScheme.onSurface,
                     fontFamily = FontFamily.Monospace,
                     fontSize = 12.sp,
@@ -392,30 +358,16 @@ private fun ProblemSelector(
                 colors = FilterChipDefaults.filterChipColors(
                     containerColor = Color.White.copy(alpha = 0.04f),
                     selectedContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.18f),
-                )
+                ),
             )
         }
     }
 }
 
 @Composable
-private fun ProblemTitle(title: String) {
-    Text(
-        text = title,
-        color = MaterialTheme.colorScheme.onBackground,
-        fontSize = 21.sp,
-        fontWeight = FontWeight.SemiBold,
-        letterSpacing = (-0.25).sp,
-        modifier = Modifier.padding(top = 4.dp, start = 2.dp),
-    )
-}
-
-@Composable
 private fun VerifiedSection(items: List<VerifiedItem>, verifiedSha: String?) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        SectionLabel(
-            if (verifiedSha == null) "Verified" else "Verified · ${verifiedSha.take(8)}"
-        )
+        SectionLabel(if (verifiedSha == null) "Verified" else "Verified · ${verifiedSha.take(8)}")
         items.forEach { item ->
             GlossCard(compact = true) {
                 Row(
@@ -487,9 +439,9 @@ private fun ObstructionsSection(items: List<ObstructionItem>) {
                                 lineHeight = 18.sp,
                             )
                         }
-                        item.source?.let {
+                        item.source?.let { source ->
                             Text(
-                                text = it,
+                                text = source,
                                 color = MaterialTheme.colorScheme.primary.copy(alpha = 0.82f),
                                 fontFamily = FontFamily.Monospace,
                                 fontSize = 11.sp,
@@ -505,11 +457,9 @@ private fun ObstructionsSection(items: List<ObstructionItem>) {
 @Composable
 private fun MathematicsSection(mathematics: Mathematics) {
     var expanded by remember { mutableStateOf(false) }
-    var tab by remember { mutableStateOf(MathTab.Mathematics) }
+    var tab by remember { mutableStateOf(MathTab.Math) }
 
-    GlossCard(
-        modifier = Modifier.animateContentSize(),
-    ) {
+    GlossCard(modifier = Modifier.animateContentSize()) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -526,31 +476,27 @@ private fun MathematicsSection(mathematics: Mathematics) {
             )
         }
 
-        AnimatedVisibility(visible = expanded) {
+        AnimatedVisibility(expanded) {
             Column(
                 modifier = Modifier.padding(top = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 Hairline()
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    MathTab.entries.forEach { entry ->
+                    MathTab.values().forEach { entry ->
                         FilterChip(
                             selected = tab == entry,
                             onClick = { tab = entry },
-                            label = {
-                                Text(if (entry == MathTab.Mathematics) "Math" else "Lean")
-                            },
+                            label = { Text(entry.name) },
                             colors = FilterChipDefaults.filterChipColors(
                                 containerColor = Color.White.copy(alpha = 0.04f),
-                                selectedContainerColor =
-                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.18f),
-                            )
+                                selectedContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.18f),
+                            ),
                         )
                     }
                 }
-
                 when (tab) {
-                    MathTab.Mathematics -> {
+                    MathTab.Math -> {
                         MathBlock("Statement", mathematics.statement)
                         MathBlock("Definitions", mathematics.definitions)
                         MathBlock("Proof", mathematics.proof)
@@ -570,7 +516,7 @@ private fun MathBlock(label: String, body: String) {
             color = MaterialTheme.colorScheme.primary.copy(alpha = 0.82f),
             fontSize = 11.sp,
             fontWeight = FontWeight.Bold,
-            letterSpacing = 1.0.sp,
+            letterSpacing = 1.sp,
         )
         SelectionContainer {
             Text(
@@ -586,18 +532,13 @@ private fun MathBlock(label: String, body: String) {
 
 @Composable
 private fun CodeBlock(code: String) {
-    val horizontal = rememberScrollState()
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(18.dp))
             .background(Color.Black.copy(alpha = 0.32f))
-            .border(
-                width = 1.dp,
-                color = Color.White.copy(alpha = 0.07f),
-                shape = RoundedCornerShape(18.dp),
-            )
-            .horizontalScroll(horizontal)
+            .border(1.dp, Color.White.copy(alpha = 0.07f), RoundedCornerShape(18.dp))
+            .horizontalScroll(rememberScrollState())
             .padding(16.dp)
     ) {
         SelectionContainer {
@@ -626,10 +567,7 @@ private fun ActivityRow(item: ActivityItem) {
                 fontFamily = FontFamily.Monospace,
                 fontSize = 12.sp,
             )
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
                     text = item.message,
                     color = MaterialTheme.colorScheme.onSurface,
@@ -659,27 +597,21 @@ private fun GlossCard(
             .clip(shape)
             .background(
                 Brush.linearGradient(
-                    colors = listOf(
+                    listOf(
                         Color.White.copy(alpha = 0.095f),
                         Color.White.copy(alpha = 0.035f),
                         Color(0xFF8E63FF).copy(alpha = 0.035f),
-                    ),
-                    start = Offset.Zero,
-                    end = Offset(1000f, 1000f),
+                    )
                 )
             )
             .border(
                 width = 1.dp,
                 brush = Brush.linearGradient(
-                    listOf(
-                        Color.White.copy(alpha = 0.20f),
-                        Color.White.copy(alpha = 0.045f),
-                    )
+                    listOf(Color.White.copy(alpha = 0.20f), Color.White.copy(alpha = 0.045f))
                 ),
                 shape = shape,
             )
             .padding(if (compact) 16.dp else 20.dp),
-        verticalArrangement = Arrangement.spacedBy(0.dp),
         content = content,
     )
 }
@@ -704,11 +636,7 @@ private fun Hairline() {
     ) {
         drawLine(
             brush = Brush.horizontalGradient(
-                listOf(
-                    Color.Transparent,
-                    Color.White.copy(alpha = 0.14f),
-                    Color.Transparent,
-                )
+                listOf(Color.Transparent, Color.White.copy(alpha = 0.14f), Color.Transparent)
             ),
             start = Offset.Zero,
             end = Offset(size.width, 0f),
@@ -718,11 +646,9 @@ private fun Hairline() {
     }
 }
 
-private fun formatTimestamp(value: String): String {
-    return runCatching {
-        DISPLAY_TIME.format(Instant.parse(value))
-    }.getOrElse { value }
-}
+private fun formatTimestamp(value: String): String = runCatching {
+    DISPLAY_TIME.format(Instant.parse(value))
+}.getOrElse { value }
 
 private val DISPLAY_TIME: DateTimeFormatter = DateTimeFormatter
     .ofPattern("MMM d · h:mm a")
