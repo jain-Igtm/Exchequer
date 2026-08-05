@@ -25,4 +25,4 @@ There is no WebView and no remotely downloaded UI code.
 
 ## Build
 
-GitHub Actions builds the debug APK with JDK 17, Gradle 9.6.1, Android Gradle Plugin 9.4.0, Kotlin 2.4.10, and the Compose 2026.06.00 BOM.
+GitHub Actions builds the debug APK with JDK 17, Gradle 9.6.1, Android Gradle Plugin 9.3.1, Kotlin 2.4.10, and the Compose 2026.06.00 BOM.
