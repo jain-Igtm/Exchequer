@@ -1,0 +1,34 @@
+name: Lean verification
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Reject proof placeholders
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -R --include='*.lean' -nE '(^|[^[:alnum:]_])(sorry|admit)([^[:alnum:]_]|$)' Exchequer Exchequer.lean; then
+            echo "Proof placeholders are forbidden in checked Lean sources."
+            exit 1
+          fi
+
+      - name: Build and kernel-check
+        uses: leanprover/lean-action@v1
+        with:
+          build: true
+          test: false
+          lint: false
+          use-mathlib-cache: true
