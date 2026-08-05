@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "repository": "jain-Igtm/Exchequer",
+  "problems": [
+    {
+      "id": "erdos-straus",
+      "title": "Erdős–Straus conjecture",
+      "verified": [
+        {
+          "name": "two_has_decomposition",
+          "statement": "The equation 4/2 = 1/x + 1/y + 1/z has a positive-integer solution.",
+          "source": "Exchequer/Problems/ErdosStraus/Basic.lean"
+        },
+        {
+          "name": "even_family",
+          "statement": "Every positive even integer has an Erdős–Straus decomposition.",
+          "source": "Exchequer/Problems/ErdosStraus/Basic.lean"
+        },
+        {
+          "name": "scale_decomposition",
+          "statement": "A verified decomposition scales to every positive multiple.",
+          "source": "Exchequer/Problems/ErdosStraus/Basic.lean"
+        },
+        {
+          "name": "lift_along_multiple",
+          "statement": "A decomposition for a positive divisor lifts to a positive multiple.",
+          "source": "Exchequer/Problems/ErdosStraus/Basic.lean"
+        }
+      ],
+      "obstructions": [],
+      "mathematics": {
+        "statement": "For every integer n ≥ 2, there exist positive integers x, y, and z such that 4/n = 1/x + 1/y + 1/z.",
+        "definitions": "For positive natural numbers, Exchequer uses the denominator-cleared proposition\n\n4xyz = n(yz + xz + xy).\n\nThis is equivalent to the unit-fraction equation because n, x, y, and z are positive.",
+        "proof": "Verified even family. Let n = 2k with k > 0. Choose x = k and y = z = 2k. Then\n\n1/x + 1/y + 1/z\n= 1/k + 1/(2k) + 1/(2k)\n= 2/k\n= 4/(2k)\n= 4/n.\n\nThe Lean file also verifies that any decomposition scales to every positive multiple and therefore lifts from a positive divisor to a multiple.",
+        "leanSource": "def HasDecomposition (n : ℕ) : Prop :=\n  ∃ x y z : ℕ,\n    0 < x ∧ 0 < y ∧ 0 < z ∧\n      4 * (x * y * z) = n * (y * z + x * z + x * y)\n\ntheorem even_family (k : ℕ) (hk : 0 < k) :\n    HasDecomposition (2 * k) := by\n  refine ⟨k, 2 * k, 2 * k, hk, by omega, by omega, ?_⟩\n  ring"
+      }
+    }
+  ]
+}
